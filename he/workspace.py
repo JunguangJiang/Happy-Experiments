@@ -1,15 +1,18 @@
 import os
 import os.path as osp
-import click
-from he import colors
 from collections import namedtuple
 import time
+import re
+import threading
+import fcntl
+
 import jsonpickle
 import sh
 from sh import ErrorReturnCode
 from prettytable import PrettyTable
-import re
-import threading
+import click
+
+from he import colors
 
 
 def get_current_time():
@@ -110,23 +113,32 @@ class Workspace:
 
     def __init__(self, workspace):
         self.workspace = workspace
-        self.experiments = {}
         self._lock = threading.Lock()
 
+    def init(self):
+        experiments = {}
+        with open(osp.join(self.workspace, "workspace.json"), "w+")as f:
+            f.write(jsonpickle.encode(experiments))
+
     def run_experiment(self, experiment):
-        if experiment in self.experiments:  # old experiment
+        experiments = self.load()
+        if experiment in experiments:  # old experiment
             click.echo(colors.prompt('Using old experiment: ') + colors.path(experiment) + os.linesep)
         else:
             click.echo(colors.prompt('Create new experiment: ') + colors.path(experiment) + os.linesep)
             root = osp.join(self.workspace, experiment)
             exp = Experiment(root=root, name=experiment)
             exp.create()
-            self.experiments[experiment] = exp
+            experiments[experiment] = exp
             copytree(osp.curdir, exp.code)
+        self.dump(experiments)
 
     def run_trial(self, experiment, script):
-        assert experiment in self.experiments
-        new_trial = self.experiments[experiment].add(script)
+        experiments = self.load()
+        assert experiment in experiments
+        new_trial = experiments[experiment].add(script)
+        self.dump(experiments)
+
         script_string = ' '.join(script)
         cmd = script[0]
         script = script[1:]
@@ -142,8 +154,8 @@ class Workspace:
                 f.write(data)
 
             current_dir = osp.abspath(osp.curdir)
+            sh.cd(experiments[experiment].code)
             try:
-                sh.cd(self.experiments[experiment].code)
                 sh.Command(cmd)(script, _out=lambda data: _fn(data, warning=False))
                 click.echo()
             except ErrorReturnCode as e:
@@ -154,11 +166,23 @@ class Workspace:
                 _fn(str(e), warning=True)
             sh.cd(current_dir)
 
-    def dump(self):
-        with open(osp.join(self.workspace, "workspace.json"), "w") as f:
-            f.write(jsonpickle.encode(self.experiments))
+    def dump(self, experiments):
+        self.file.seek(0)
+        self.file.write(jsonpickle.encode(experiments))
+        self.file.close()
 
     def load(self):
-        with open(osp.join(self.workspace, "workspace.json"), "r") as f:
-            self.experiments = jsonpickle.decode(f.read())
+        self.file = open(osp.join(self.workspace, "workspace.json"), "r+")
+        fcntl.flock(self.file, fcntl.LOCK_EX)
+        experiments = jsonpickle.decode(self.file.read())
+        return experiments
 
+    def display(self, display_experiments, arg_names, metric_names, time, log, script):
+        experiments = self.load()
+        for exp_name in display_experiments:
+            if exp_name not in experiments:
+                click.echo(colors.warning("Experiment {} doesn't exist".format(exp_name)))
+
+        for exp_name in display_experiments:
+            experiments[exp_name].display(arg_names, metric_names, time, log, script)
+        self.dump(experiments)

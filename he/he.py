@@ -1,5 +1,5 @@
-import click
 import os
+import click
 from he import colors
 from he.workspace import Workspace
 
@@ -18,7 +18,7 @@ def init():
     try:
         os.mkdir(WORKSPACE_DIR)
         workspace = Workspace(WORKSPACE_DIR)
-        workspace.dump()
+        workspace.init()
         if not os.path.exists('.heignore'):
             click.echo(colors.warning('Please provide .heignore!'))
     except FileExistsError:
@@ -33,7 +33,6 @@ def init():
 def run(exp, script, script_file):
     """Run an experiment"""
     workspace = Workspace(WORKSPACE_DIR)
-    workspace.load()
     try:
         workspace.run_experiment(exp)
         if script_file is None:
@@ -45,11 +44,10 @@ def run(exp, script, script_file):
         click.echo(colors.prompt('Finish experiment: ') + colors.path(exp))
     except Exception as e:
         click.echo(colors.warning(e))
-    workspace.dump()
 
 
 @cli.command()
-@click.argument('experiment',type=click.STRING)
+@click.argument('experiment', type=click.STRING, nargs=-1)
 @click.option('--metric_names', '-m',  multiple=True)
 @click.option('--arg_names', '-a', multiple=True)
 @click.option('--time/--no-time', default=False)
@@ -58,8 +56,5 @@ def run(exp, script, script_file):
 def show(experiment, metric_names, arg_names, time, log, script):
     """Display the information of a certain experiment"""
     workspace = Workspace(WORKSPACE_DIR)
-    workspace.load()
-    if experiment in workspace.experiments:
-        workspace.experiments[experiment].display(arg_names, metric_names,  time, log, script)
-    else:
-        click.echo(colors.warning("Experiment {} doesn't exist".format(experiment)))
+    workspace.display(experiment, metric_names, arg_names, time, log, script)
+
