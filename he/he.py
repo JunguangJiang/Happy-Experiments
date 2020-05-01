@@ -5,6 +5,7 @@ from he.workspace import Workspace
 
 WORKSPACE_DIR = 'he_workspace'
 
+
 @click.group()
 def cli():
     """HE is built for Happy Experiments"""
@@ -12,20 +13,17 @@ def cli():
 
 
 @cli.command()
-@click.option(
-    '--watch', prompt='Watched directory',
-    type=click.Path(exists=True, file_okay=False),
-    help='The directory to watch'
-)
-def init(watch):
+def init():
     """Init a happy experiment workspace"""
-    click.echo(colors.prompt('Watch directory ') + colors.path(watch))
     try:
         os.mkdir(WORKSPACE_DIR)
+        workspace = Workspace(WORKSPACE_DIR)
+        workspace.dump()
+        if not os.path.exists('.heignore'):
+            click.echo(colors.warning('Please provide .heignore!'))
     except FileExistsError:
         click.echo(colors.warning('HE workspace already exists!'))
-    workspace = Workspace(WORKSPACE_DIR)
-    workspace.dump()
+
 
 
 @cli.command()
@@ -51,13 +49,8 @@ def run(exp, script, script_file):
 
 
 @cli.command()
-@click.argument(
-    'experiment',
-    type=click.STRING,
-)
-@click.option(
-    '--metric_names', '-m',  multiple=True
-)
+@click.argument('experiment',type=click.STRING)
+@click.option('--metric_names', '-m',  multiple=True)
 @click.option('--arg_names', '-a', multiple=True)
 @click.option('--time/--no-time', default=False)
 @click.option('--log/--no-log', default=False)

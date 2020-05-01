@@ -9,6 +9,7 @@ import sh
 from sh import ErrorReturnCode
 from prettytable import PrettyTable
 import re
+import threading
 
 
 def get_current_time():
@@ -46,6 +47,19 @@ def parse_metrics(log_file, metric_names):
     return values
 
 
+def copytree(src, dst):
+    import shutil
+    ignore_patterns = ['he_workspace']
+    if osp.exists('.heignore'):
+        with open('.heignore', 'r') as f:
+            for line in f.readlines():
+                line = line.strip().rstrip(os.linesep)
+                if line == '' or line.startswith('#') or line.find('***') > -1:
+                    continue
+                ignore_patterns.append(line)
+    shutil.copytree(src, dst, ignore=shutil.ignore_patterns(*ignore_patterns), symlinks=True)
+
+
 class Experiment:
     def __init__(self, root, name):
         """
@@ -56,9 +70,12 @@ class Experiment:
         self.name = name
         self.trials = []
 
+    @property
+    def code(self):
+        return osp.join(self.root, 'code')
+
     def create(self):
         os.mkdir(self.root)
-        os.mkdir(osp.join(self.root, 'code'))
 
     def add(self, script):
         new_id = len(self.trials)
@@ -94,6 +111,7 @@ class Workspace:
     def __init__(self, workspace):
         self.workspace = workspace
         self.experiments = {}
+        self._lock = threading.Lock()
 
     def run_experiment(self, experiment):
         if experiment in self.experiments:  # old experiment
@@ -104,6 +122,7 @@ class Workspace:
             exp = Experiment(root=root, name=experiment)
             exp.create()
             self.experiments[experiment] = exp
+            copytree(osp.curdir, exp.code)
 
     def run_trial(self, experiment, script):
         assert experiment in self.experiments
@@ -112,7 +131,7 @@ class Workspace:
         cmd = script[0]
         script = script[1:]
         click.echo(colors.prompt('Running script: ') + colors.cmd('{} '.format(cmd))
-                   + colors.path(' '.join(script)))
+                   + colors.path(script_string))
 
         with open(new_trial.log_file, "w") as f:
             def _fn(data, warning=False):
@@ -122,7 +141,9 @@ class Workspace:
                     print(data, end='')
                 f.write(data)
 
+            current_dir = osp.abspath(osp.curdir)
             try:
+                sh.cd(self.experiments[experiment].code)
                 sh.Command(cmd)(script, _out=lambda data: _fn(data, warning=False))
                 click.echo()
             except ErrorReturnCode as e:
@@ -131,6 +152,7 @@ class Workspace:
                 _fn("command not found: {}\n".format(str(e)), warning=True)
             except Exception as e:
                 _fn(str(e), warning=True)
+            sh.cd(current_dir)
 
     def dump(self):
         with open(osp.join(self.workspace, "workspace.json"), "w") as f:
