@@ -10,6 +10,9 @@ setup(
         "click",
         # Colorama is only required for Windows.
         "colorama",
+        "sh",
+        "jsonpickle",
+        "prettytable"
     ],
     entry_points="""
         [console_scripts]
