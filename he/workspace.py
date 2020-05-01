@@ -13,7 +13,11 @@ from he.util import ExclusivePersistentObject
 class Workspace:
     """HE Workspace"""
     def __init__(self):
-        self.experiments_on_disk = ExclusivePersistentObject(osp.join(WORKSPACE_DIR, "workspace.json"))
+        experiments_file = osp.join(WORKSPACE_DIR, "workspace.json")
+        if not osp.exists(experiments_file):
+            click.echo(colors.warning("Cannot find HE workspace!"))
+            exit(0)
+        self.experiments_on_disk = ExclusivePersistentObject(experiments_file)
 
     def init(self):
         """
@@ -75,6 +79,7 @@ class Workspace:
         for exp_name in display_exp_names:
             if exp_name not in experiments:
                 click.echo(colors.warning("Experiment {} doesn't exist".format(exp_name)))
+                return
 
         # get the table head
         table_head = []
