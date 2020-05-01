@@ -75,11 +75,14 @@ class Workspace:
         """
         experiments = self.experiments_on_disk.load()
 
-        # check whether the display experiments exists
-        for exp_name in display_exp_names:
-            if exp_name not in experiments:
-                click.echo(colors.warning("Experiment {} doesn't exist".format(exp_name)))
-                return
+        if len(display_exp_names) == 0:
+            display_exp_names = experiments.keys()
+        else:
+            # check whether the display experiments exists
+            for exp_name in display_exp_names:
+                if exp_name not in experiments:
+                    click.echo(colors.warning("Experiment {} doesn't exist".format(exp_name)))
+                    return
 
         # get the table head
         table_head = []
