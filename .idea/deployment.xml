@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="PublishConfigData" autoUpload="Always" serverName="jiangjunguang@192.168.6.114:22">
+    <serverData>
+      <paths name="jiangjunguang@192.168.6.114:22">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/workspace/jiangjunguang/happy_experiment" local="$PROJECT_DIR$/../happy_experiment" />
+          </mappings>
+        </serverdata>
+      </paths>
+    </serverData>
+    <option name="myAutoUpload" value="ALWAYS" />
+  </component>
+</project>
