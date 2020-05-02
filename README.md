@@ -56,11 +56,6 @@ pip install git+https://github.com/JunguangJiang/Happy-Experiments.git@master
     test/code中包含了当前时刻的代码。test/0.txt包含了第一次试验的结果。
     - 如果不指定实验名称，默认会采用当前的时间作为实验名称。
     - 如果指定的实验名称与此前的重复，则会**使用过去实验时刻的代码**。
-    
-    如果要运行多个试验，则在${script_file}中的每行写一个试验命令，并运行
-    ```shell script
-    he run --exp ${experiment_name} --script ${script_file}
-    ```
 
 4. 展示实验结果
 ```shell script

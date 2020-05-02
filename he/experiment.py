@@ -52,7 +52,7 @@ class Experiment:
             table_row = []
             if exp_name:
                 table_row.append(self.name)
-            table_row.extend(parse_args(trial.script, arg_names))
+            table_row.extend(parse_args_from_script_and_its_content(trial.script, arg_names))
             table_row.extend(parse_metrics(trial.log_file, metric_names))
             if time:
                 table_row.append(trial.time)
@@ -64,7 +64,21 @@ class Experiment:
         return table_rows
 
 
-def parse_args(script, arg_names):
+def parse_args_from_script_and_its_content(script, arg_names):
+    arg_values = parse_args_from_script(script, arg_names)
+    if len(script) >= 2 and osp.splitext(script[1])[1] == '.sh':  # When running a shell script
+        with open(script[1]) as f:
+            internal_script = f.read().strip(os.linesep).split(' ')
+            internal_arg_values = parse_args_from_script(internal_script, arg_names)
+        # When arg_value is available from script,
+        # we will not use the arg_value from script file content
+        for i in range(len(arg_values)):
+            if arg_values[i] == "":
+                arg_values[i] = internal_arg_values[i]
+    return arg_values
+
+
+def parse_args_from_script(script, arg_names):
     """
     Parse the arg values from a script
     :param script: (list(str))
@@ -98,16 +112,17 @@ def parse_metrics(log_file, metric_names):
     :return:
     """
     values = []
-    with open(log_file, "r") as f:
-        for metric_name in metric_names:
-            metric_pattern = re.compile(metric_name + '[ =:]*([-+]?[0-9]*\.?[0-9]+)')
-            value = ""
+    for metric_name in metric_names:
+        metric_pattern = re.compile(metric_name + '[ =:]*([-+]?[0-9]*\.?[0-9]+)')
+        value = ""
+        with open(log_file, "r") as f:
+
             for line in reversed(f.readlines()):
                 result = metric_pattern.search(line)
                 if result:  # find the latest value
                     value = result.group(1)
                     break
-            values.append(value)
+        values.append(value)
     return values
 
 

@@ -23,6 +23,9 @@ class Trial:
         """Run the script in the `running_directory`"""
         click.echo(colors.prompt('Running script: ') + colors.cmd(' '.join(self.script)))
 
+        with open(self.log_file.replace('.txt', '.sh'), 'w') as f:
+            f.write(" ".join(self.script))
+
         cmd = self.script[0]
         script = self.script[1:]
 
@@ -39,7 +42,8 @@ class Trial:
             current_dir = osp.abspath(osp.curdir)
             sh.cd(running_directory)
             try:
-                program = sh.Command(cmd)(script, _out=lambda data: _fn(data, warning=False), _bg=True)
+                program = sh.Command(cmd)(script, _out=lambda data: _fn(data, warning=False), _bg=True, _bg_exc=False,
+                                          _err=lambda data: _fn(data, warning=True))
                 program.wait()
                 click.echo()
             except sh.ErrorReturnCode as e:

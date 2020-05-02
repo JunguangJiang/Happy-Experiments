@@ -22,10 +22,8 @@ def init():
               help='Experiment name. Use current time when not provided')
 @click.option('--silence/--no-silence', default=False,
               help='Whether silence the script output. Default: False')
-@click.option('--script_file', default=None, type=click.STRING,
-              help='Script file name.')
 @click.argument('script', nargs=-1)
-def run(exp, silence, script_file, script):
+def run(exp, silence, script):
     """
     Run an experiment.
 
@@ -36,12 +34,7 @@ def run(exp, silence, script_file, script):
         exp = get_current_time()
     workspace = Workspace()
     workspace.start_experiment(exp)
-    if script_file is None:
-        workspace.run_trial(exp, script, silence)
-    else:
-        with open(script_file, 'r') as f:
-            for line in f.readlines():
-                workspace.run_trial(exp, line.strip().split(' '), silence)
+    workspace.run_trial(exp, script, silence)
     click.echo(colors.prompt('Finish experiment: ') + colors.path(exp))
 
 
