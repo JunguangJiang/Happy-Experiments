@@ -38,12 +38,15 @@ class Trial:
             current_dir = osp.abspath(osp.curdir)
             sh.cd(running_directory)
             try:
-                sh.Command(cmd)(script, _out=lambda data: _fn(data, warning=False))
+                program = sh.Command(cmd)(script, _out=lambda data: _fn(data, warning=False), _bg=True)
+                program.wait()
                 click.echo()
             except sh.ErrorReturnCode as e:
                 _fn(bytes.decode(e.stderr), warning=True)
             except sh.CommandNotFound as e:
                 _fn("command not found: {}\n".format(str(e)), warning=True)
+            except KeyboardInterrupt as e:
+                program.terminate()
             except Exception as e:
                 _fn(str(e), warning=True)
             sh.cd(current_dir)

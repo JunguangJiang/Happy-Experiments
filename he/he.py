@@ -36,17 +36,27 @@ def run(exp, script, script_file):
 
 
 @cli.command()
+@click.argument('experiment_name', type=click.STRING)
+def delete(experiment_name):
+    """Delete an experiment"""
+    workspace = Workspace()
+    workspace.delete_experiment(experiment_name)
+
+
+@cli.command()
 @click.argument('experiment', type=click.STRING, nargs=-1)
 @click.option('--arg_names', '-a', multiple=True)
 @click.option('--metric_names', '-m',  multiple=True)
+@click.option('--exp-name/--no-exp-name', default=False)
 @click.option('--time/--no-time', default=False)
 @click.option('--log/--no-log', default=False)
 @click.option('--script/--no-script', default=False)
-def show(experiment, arg_names, metric_names, time, log, script):
+@click.option('--save', type=click.STRING, help='output csv filename', default=None)
+def show(experiment, arg_names, metric_names, exp_name, time, log, script, save):
     """
     Display the information of certain experiments
     When experiments are not provided, display all the experiments.
     """
     workspace = Workspace()
-    workspace.display(experiment, arg_names, metric_names, time, log, script)
+    workspace.display(experiment, arg_names, metric_names, exp_name, time, log, script, save)
 

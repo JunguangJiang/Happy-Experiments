@@ -12,7 +12,8 @@ setup(
         "colorama",
         "sh",
         "jsonpickle",
-        "prettytable"
+        "prettytable",
+        "pandas"
     ],
     entry_points="""
         [console_scripts]

@@ -3,6 +3,7 @@ import os.path as osp
 
 import click
 from prettytable import PrettyTable
+import pandas as pd
 
 from he import colors
 from he.config import *
@@ -14,10 +15,13 @@ class Workspace:
     """HE Workspace"""
     def __init__(self):
         experiments_file = osp.join(WORKSPACE_DIR, "workspace.json")
+        self.experiments_on_disk = ExclusivePersistentObject(experiments_file)
+
+    def check(self):
+        experiments_file = osp.join(WORKSPACE_DIR, "workspace.json")
         if not osp.exists(experiments_file):
             click.echo(colors.warning("Cannot find HE workspace!"))
             exit(0)
-        self.experiments_on_disk = ExclusivePersistentObject(experiments_file)
 
     def init(self):
         """
@@ -39,6 +43,7 @@ class Workspace:
         """
         Create Experiment of name `experiment_name` only when it doesn't exist.
         """
+        self.check()
         experiments = self.experiments_on_disk.load()
         if experiment_name in experiments:  # old experiment
             click.echo(colors.prompt('Using old experiment: ') + colors.path(experiment_name) + os.linesep)
@@ -48,11 +53,25 @@ class Workspace:
             experiments[experiment_name] = Experiment(root=root, name=experiment_name)
         self.experiments_on_disk.dump(experiments)
 
+    def delete_experiment(self, experiment_name):
+        self.check()
+        experiments = self.experiments_on_disk.load()
+        if experiment_name in experiments:  # old experiment
+            if click.prompt(colors.prompt("Delete {}? (yes/no)".format(experiment_name))) == 'yes':
+                experiment = experiments[experiment_name]
+                import shutil
+                shutil.rmtree(experiment.root)
+                experiments.pop(experiment_name)
+        else:
+            click.echo(colors.warning("Cannot find experiment {}".format(experiment_name)))
+        self.experiments_on_disk.dump(experiments)
+
     def run_trial(self, experiment_name, script):
         """
         :param experiment_name: (str)
         :param script: (list(str))
         """
+        self.check()
         # store the script information into the experiment
         # get the Trial of this script
         experiments = self.experiments_on_disk.load()
@@ -64,15 +83,19 @@ class Workspace:
         # running the new Trial
         new_trial.run(experiment.code)
 
-    def display(self, display_exp_names, arg_names, metric_names, time, log, script):
+    def display(self, display_exp_names, arg_names, metric_names,
+                has_exp_name, time, log, script, csv_file=None):
         """
         :param display_exp_names: (list(str)) the names of all the experiments to be displayed
         :param arg_names: (list(str)) the names of all the hyper-parameters to be displayed
         :param metric_names: (list(str)) the names of all the metric to be displayed
+        :param has_exp_name: (bool) whether show exp_name
         :param time: (bool) whether show time
         :param log: (bool) whether show log file_name
         :param script: (bool) whether show script string
+        :param csv_file: (str) output csv filename. Defualt: None
         """
+        self.check()
         experiments = self.experiments_on_disk.load()
 
         if len(display_exp_names) == 0:
@@ -88,9 +111,8 @@ class Workspace:
         table_head = []
         if len(display_exp_names) > 1:
             has_exp_name = True
+        if has_exp_name:
             table_head.append("exp_name")
-        else:
-            has_exp_name = False
         table_head.extend(list(arg_names) + list(metric_names))
         if time:
             table_head.append('time')
@@ -112,4 +134,7 @@ class Workspace:
         self.experiments_on_disk.dump(experiments)
 
         print(table)
+        if csv_file is not None:
+            csv = pd.DataFrame(columns=table_head, data=table_rows)
+            csv.to_csv(csv_file)
 
