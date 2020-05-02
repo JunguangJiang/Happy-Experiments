@@ -57,7 +57,7 @@ class Workspace:
         self.check()
         experiments = self.experiments_on_disk.load()
         if experiment_name in experiments:  # old experiment
-            if click.prompt(colors.prompt("Delete {}? (yes/no)".format(experiment_name))) == 'yes':
+            if click.prompt(colors.prompt("Delete experiment {}? (yes/no)".format(experiment_name))) == 'yes':
                 experiment = experiments[experiment_name]
                 import shutil
                 shutil.rmtree(experiment.root)
@@ -66,10 +66,11 @@ class Workspace:
             click.echo(colors.warning("Cannot find experiment {}".format(experiment_name)))
         self.experiments_on_disk.dump(experiments)
 
-    def run_trial(self, experiment_name, script):
+    def run_trial(self, experiment_name, script, silence):
         """
         :param experiment_name: (str)
         :param script: (list(str))
+        :param silence: (bool) whether print results on the screen
         """
         self.check()
         # store the script information into the experiment
@@ -81,7 +82,7 @@ class Workspace:
         self.experiments_on_disk.dump(experiments)
 
         # running the new Trial
-        new_trial.run(experiment.code)
+        new_trial.run(experiment.code, silence)
 
     def display(self, display_exp_names, arg_names, metric_names,
                 has_exp_name, time, log, script, csv_file=None):

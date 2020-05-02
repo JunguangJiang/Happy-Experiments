@@ -19,7 +19,7 @@ class Trial:
         self.time = time
         self.id = id
 
-    def run(self, running_directory):
+    def run(self, running_directory, silence=False):
         """Run the script in the `running_directory`"""
         click.echo(colors.prompt('Running script: ') + colors.cmd(' '.join(self.script)))
 
@@ -29,10 +29,11 @@ class Trial:
         with open(self.log_file, "w") as f:
             def _fn(data, warning=False):
                 """print and save the Trial output"""
-                if warning:
-                    click.echo(colors.warning(data))
-                else:
-                    print(data, end='')
+                if not silence:
+                    if warning:
+                        click.echo(colors.warning(data))
+                    else:
+                        print(data, end='')
                 f.write(data)
 
             current_dir = osp.abspath(osp.curdir)
