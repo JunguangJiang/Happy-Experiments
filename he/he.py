@@ -74,6 +74,19 @@ def show(experiment, arg_names, metric_names, exp_name, time, log, script, save)
     Display the information of certain experiments.
 
     When experiment is not provided, display all the experiments.
+
+    Explanations of `arg_names`:
+        For script `python test.py -s clipart -t amazon`, arg_names are ['s', 't'],
+        and the corresponding arg_values are ['clipart', 'amazon'].
+
+    Explanations of `metric_names`:
+        Parse the metric values from the log file.
+        Note that we use the last matched value in the log file.
+        For example, when metric is 'best_acc1', we will match
+        the last line that look like
+            - best_acc1 = 78.5
+            - best_acc1: 43
+            - best_acc1 100.
     """
     workspace = Workspace()
     workspace.display(experiment, arg_names, metric_names, exp_name, time, log, script, save)
